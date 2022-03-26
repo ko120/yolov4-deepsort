@@ -1,4 +1,5 @@
 import os
+import pdb
 # comment out below line to enable tensorflow logging outputs
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import time
@@ -174,6 +175,7 @@ def main(_argv):
                 names.append(class_name)
         names = np.array(names)
         count = len(names)
+        # Counting total number of object
         if FLAGS.count:
             cv2.putText(frame, "Objects being tracked: {}".format(count), (5, 35), cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, (0, 255, 0), 2)
             print("Objects being tracked: {}".format(count))
@@ -199,26 +201,35 @@ def main(_argv):
         # Call the tracker
         tracker.predict()
         tracker.update(detections)
-
+        # Counting Objects
+        count = dict()
+  
         # update tracks
         for track in tracker.tracks:
             if not track.is_confirmed() or track.time_since_update > 1:
                 continue 
+            
             bbox = track.to_tlbr()
             class_name = track.get_class()
-            
+            count[class_name] = count.get(class_name, 0) + 1
         # draw bbox on screen
             color = colors[int(track.track_id) % len(colors)]
             color = [i * 255 for i in color]
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1]-30)), (int(bbox[0])+(len(class_name)+len(str(track.track_id)))*17, int(bbox[1])), color, -1)
             cv2.putText(frame, class_name + "-" + str(track.track_id),(int(bbox[0]), int(bbox[1]-10)),0, 0.75, (255,255,255),2)
-
         # if enable info flag then print details about each track
             if FLAGS.info:
-                print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))))
-
+                print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}, centroid: {}".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])), ((int(bbox[0]) + int(bbox[2]))/ 2.0 , (int(bbox[1]) + int(bbox[3]))/ 2.0) ))
+        # Display counted Objects per class
+        if count!= None:
+          height_ratio = int(height / 20)
+          offset = 50
+          for key, value in count.items():
+            cv2.putText(frame, "{}s detected: {}".format(key, value), (5, offset),cv2.FONT_HERSHEY_COMPLEX_SMALL, 3, (0, 255, 0), 2)
+            offset += height_ratio
         # calculate frames per second of running detections
+
         fps = 1.0 / (time.time() - start_time)
         print("FPS: %.2f" % fps)
         result = np.asarray(frame)
