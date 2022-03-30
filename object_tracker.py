@@ -39,8 +39,10 @@ flags.DEFINE_float('score', 0.50, 'score threshold')
 flags.DEFINE_boolean('dont_show', False, 'dont show video output')
 flags.DEFINE_boolean('info', False, 'show detailed info of tracked objects')
 flags.DEFINE_boolean('count', False, 'count objects being tracked on screen')
-flags.DEFINE_boolean('xaxis', False, 'gate position')
-flags.DEFINE_boolean('yaxis', False, 'gate position')
+flags.DEFINE_boolean('xaxis', False, 'gate position on middle of x axis')
+flags.DEFINE_boolean('yaxis', False, 'gate position on middle of y axis')
+flags.DEFINE_string('allowed_classes', None, 'allowed classes for tracking')
+
 class CentroidTracker:
     def __init__(self, maxDisappeared=50, maxDistance=50):
         # initialize the next unique object ID along with two ordered
@@ -336,9 +338,9 @@ def main(_argv):
 
         # by default allow all classes in .names file
         allowed_classes = list(class_names.values())
-        
+        pdb.set_trace()
         # custom allowed classes (uncomment line below to customize tracker for only people)
-        #allowed_classes = ['person']
+        allowed_classes = FLAGS.allowed_classes
 
         # loop through objects and use class index to get class name, allow only classes in allowed_classes list
         names = []
@@ -378,6 +380,7 @@ def main(_argv):
         # Counting Objects
         count = dict()
         ids_list = list()
+
         # update tracks
         for track in tracker.tracks:
             if not track.is_confirmed() or track.time_since_update > 1:
@@ -390,12 +393,21 @@ def main(_argv):
             c_x_hist[track.track_id].append(center_x)
             c_y_hist[track.track_id].append(center_y)
             ids_list.append(track.track_id)
+
         # draw bbox on screen
             color = colors[int(track.track_id) % len(colors)]
             color = [i * 255 for i in color]
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1]-30)), (int(bbox[0])+(len(class_name)+len(str(track.track_id)))*17, int(bbox[1])), color, -1)
             cv2.putText(frame, class_name + "-" + str(track.track_id),(int(bbox[0]), int(bbox[1]-10)),0, 0.75, (255,255,255),2)
+
+        # draw the trajectory of moving object
+            for j in range(1, len(c_x_hist[track.track_id])):
+              if c_x_hist[track.track_id][j-1] is None or c_x_hist[track.track_id][j] is None:
+                  continue
+              thickness = int(np.sqrt(64/float(j+1))*2)
+              cv2.line(frame, (int(c_x_hist[track.track_id][j-1]), int(c_y_hist[track.track_id][j-1])), (int(c_x_hist[track.track_id][j]), int(c_y_hist[track.track_id][j-1])), color, thickness)
+
         # if enable info flag then print details about each track
             if FLAGS.info:
                 print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}, centroid: {} in: {}, out: {} ".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])), ((int(bbox[0]) + int(bbox[2]))/ 2.0 , (int(bbox[1]) + int(bbox[3]))/ 2.0) , right, left))
@@ -434,7 +446,10 @@ def main(_argv):
         # Display counted objects per class 
         font = cv2.FONT_HERSHEY_COMPLEX_SMALL
         if FLAGS.count:
-          cv2.putText(frame, f'Left: {left}; Right: {right}', (5, 150), font, 3, (0, 0xFF, 0xFF), 2, cv2.FONT_HERSHEY_COMPLEX_SMALL)
+          if FLAGS.xaxis:
+            cv2.putText(frame, f'Left: {right}; Right: {left}', (5, 155), font, 3, (0, 0xFF, 0xFF), 2, cv2.FONT_HERSHEY_COMPLEX_SMALL)
+          if FLAGS.yaxis:
+            cv2.putText(frame, f'down: {left}; up: {right}', (5, 155), font, 3, (0, 0xFF, 0xFF), 2, cv2.FONT_HERSHEY_COMPLEX_SMALL)
           if count!= None:
             height_ratio = int(height / 20)
             offset = 50
