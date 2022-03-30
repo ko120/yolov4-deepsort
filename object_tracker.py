@@ -41,7 +41,7 @@ flags.DEFINE_boolean('info', False, 'show detailed info of tracked objects')
 flags.DEFINE_boolean('count', False, 'count objects being tracked on screen')
 flags.DEFINE_boolean('xaxis', False, 'gate position on middle of x axis')
 flags.DEFINE_boolean('yaxis', False, 'gate position on middle of y axis')
-flags.DEFINE_string('allowed_classes', None, 'allowed classes for tracking')
+flags.DEFINE_list('allowed_classes', None, 'allowed classes for tracking')
 
 class CentroidTracker:
     def __init__(self, maxDisappeared=50, maxDistance=50):
