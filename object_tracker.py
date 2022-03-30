@@ -338,7 +338,6 @@ def main(_argv):
 
         # by default allow all classes in .names file
         allowed_classes = list(class_names.values())
-        pdb.set_trace()
         # custom allowed classes (uncomment line below to customize tracker for only people)
         allowed_classes = FLAGS.allowed_classes
 
@@ -442,7 +441,7 @@ def main(_argv):
           cv2.line(frame, (int(0.5*width), 0),(int(0.5*width), height), (255, 0, 0), 5)
         elif FLAGS.yaxis:
           cv2.line(frame, (0, int(0.5*height)),(width, int(0.5 *height)), (255, 0, 0), 5)
-        #pdb.set_trace()
+
         # Display counted objects per class 
         font = cv2.FONT_HERSHEY_COMPLEX_SMALL
         if FLAGS.count:
